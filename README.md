@@ -1,42 +1,60 @@
 # Zotero Skill for OpenClaw
 
-An OpenClaw skill for managing Zotero libraries via the local API.
+An OpenClaw skill for full read/write management of Zotero libraries.
 
 ## Setup
 
-1. Enable Zotero's local API: **Zotero → Settings → Advanced → "Allow other applications on this computer to communicate with Zotero"**
-2. Copy `SKILL.md` and `scripts/` to your OpenClaw skills directory
+1. Enable Zotero's local API: **Settings → Advanced → "Allow other applications..."**
+2. Install the [debug-bridge plugin](https://github.com/retorquere/zotero-better-bibtex/releases/tag/debug-bridge) for write operations
+3. Set a token in Zotero: **Settings → Advanced → Config Editor** → create `extensions.zotero.debug-bridge.token`
+4. Save your token: `mkdir -p ~/.config/zotero-bridge && echo "YOUR_TOKEN" > ~/.config/zotero-bridge/token`
 
 ## Features
 
-- **Read**: List collections, search items, get item details
-- **Write**: Import papers by DOI, RIS file, or metadata (title/authors/year)
-- **Helper script**: `scripts/zotero_helper.py` (stdlib only, no pip dependencies)
+### Read (via Local API)
+- List collections, search items, get item details
+
+### Write (via Debug Bridge)
+- Create/delete collections
+- Add/remove items from collections
+- Import papers by DOI, RIS file, or metadata
+- Update item fields, add tags
+- Execute arbitrary Zotero JS
 
 ## Usage
 
 ```bash
-# List collections
+# Read
 python3 scripts/zotero_helper.py list_collections
-
-# Search items
 python3 scripts/zotero_helper.py search "CRISPR"
+python3 scripts/zotero_helper.py get_item ABCD1234
 
-# Import by DOI
+# Write
+python3 scripts/zotero_helper.py create_collection "My Papers" --parent PARENTKEY
+python3 scripts/zotero_helper.py move_items COLLKEY ITEM1 ITEM2
+python3 scripts/zotero_helper.py delete_items KEY1 KEY2
+python3 scripts/zotero_helper.py add_tags ITEMKEY tag1 tag2
+python3 scripts/zotero_helper.py update_field ITEMKEY title "New Title"
+
+# Import
 python3 scripts/zotero_helper.py import_doi 10.1038/s41586-020-2649-2
-
-# Import RIS file
 python3 scripts/zotero_helper.py import_ris papers.ris
 
-# Import by metadata
-python3 scripts/zotero_helper.py import_meta --title "Paper Title" --authors "Smith, J." --year 2024
+# Escape hatch
+python3 scripts/zotero_helper.py execute 'return Zotero.Libraries.userLibraryID'
 ```
 
 ## How It Works
 
-- Local API at `http://localhost:23119/api/users/0/` is **read-only** (GET only)
-- Item creation uses `POST /connector/import` with RIS-formatted data
-- DOI import fetches RIS from `doi.org` content negotiation
+- **Reads**: Local API at `http://localhost:23119/api/users/0/` (GET only)
+- **Imports**: `POST /connector/import` with RIS data
+- **Writes**: `POST /debug-bridge/execute` with JavaScript (requires debug-bridge plugin)
+
+## Requirements
+
+- Zotero 7+ desktop running locally
+- Python 3.x (stdlib only, no pip dependencies)
+- [debug-bridge plugin](https://github.com/retorquere/zotero-better-bibtex/releases/tag/debug-bridge) for write operations
 
 ## License
 
